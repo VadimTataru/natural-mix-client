@@ -1,6 +1,11 @@
 ﻿@page "/"
 @using System.ComponentModel.DataAnnotations
 @using MudBlazor
+@using System.Text
+@using System.Text.Json
+@using System.Net.Http.Headers
+@using NaturalMixWebClient.Models
+@inject IDialogService DialogService
 
 <PageTitle>Index</PageTitle>
 
@@ -11,22 +16,52 @@
         </MudCardHeader>
         <MudCardContent xs="7">
             <MudItem xs="12" Class="justify-center">
-                <MudTextField @bind-Value="mod.TextToSend" DisableUnderLine="true" Lines="10" Placeholder="Вставьте список ингредиентов через запятую..." 
+                <MudTextField @bind-Value="TextToSend" DisableUnderLine="true" Lines="10" Placeholder="Вставьте список ингредиентов через запятую..." 
                 Variant="Variant.Filled" Style="@($"color:{Colors.Shades.Black}; background:{Colors.Indigo.Lighten5};")"></MudTextField>
             </MudItem>
             <MudItem xs="12" Class="d-flex justify-center">
-                <MudButton Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary" Size="Size.Large" Class="mt-8">Анализировать</MudButton>
+                <MudButton @onclick="@(async () => await GetComponentsDetails())" Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary" Size="Size.Large" Class="mt-8">Анализировать</MudButton>
             </MudItem>
         </MudCardContent>
     </MudCard>
 </MudContainer>
 
 @code {
-    private ExampleModel mod = new ExampleModel();
+    [Required]
+    private string? TextToSend { get; set; }
+    List<ComponentResponse>? componentDetails;
 
-    public class ExampleModel
+    private string[] DivideComponents(string components)
     {
-        [Required]
-        public string? TextToSend { get; set; }
+        return components.Split(',');
+    }
+
+    private void OpenDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, NoHeader = true};
+        DialogService.Show<ComponentsResponseDialogWindow>("Dialog Header", options);
+    }
+
+    private async Task GetComponentsDetails()
+    {
+        HttpClient client = new HttpClient();
+
+        string url = "https://localhost:7246/api/ComponentItem";
+        //var request = new HttpRequestMessage(HttpMethod.Post, "url");
+        var postBody = TextToSend?.Split(',');
+        if (postBody == null) return;
+
+        foreach (string word in postBody)
+            word.Trim();
+
+        using var response = await client.PostAsJsonAsync(url, postBody);
+
+        if(response.IsSuccessStatusCode)
+            componentDetails = await response.Content.ReadFromJsonAsync<List<ComponentResponse>>();
+
+        if (componentDetails.Any())
+            for(int i = 0; i < componentDetails.Count; i++)
+                Console.WriteLine(componentDetails[i].Description);
+
     }
 }
