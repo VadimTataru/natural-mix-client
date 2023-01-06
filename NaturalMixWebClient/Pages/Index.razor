@@ -1,9 +1,48 @@
 ﻿@page "/"
+@using System.ComponentModel.DataAnnotations
+@using MudBlazor
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mt-3 mb-3">
+            <div class="card-header">
+                <h2 class="justify-content-center">Анализ состава косметики</h2>
+            </div>
 
-Welcome to your new app.
+            <div class="card-body">
+                <EditForm Model="@mod">
+                    <div class="row">
+                        <InputTextArea @bind-Value="mod.TextToSend" class="border-3" DisplayName="Clown"></InputTextArea>
+                    </div>
+                    <div class="btn" align="center">
+                        <button type="submit" class="btn btn-outline-primary">Анализировать</button>
+                    </div>                    
+               </EditForm>
+            </div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+            <div class="card-body">
+                <MudForm Model="@mod">
+                    <div class="row">
+                        <MudTextField @bind-Value="mod.TextToSend" Placeholder="Вставьте список ингредиентов через запятую" Variant="Variant.Filled"></MudTextField>
+                    </div>
+                    
+                    <div class="btn" align="center">
+                        <button type="submit" class="btn btn-outline-primary">Анализировать</button>
+                    </div>      
+                </MudForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ExampleModel mod = new ExampleModel();
+
+    public class ExampleModel
+    {
+        [Required]
+        public string? TextToSend { get; set; }
+    }
+}
