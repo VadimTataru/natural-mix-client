@@ -4,38 +4,22 @@
 
 <PageTitle>Index</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card mt-3 mb-3">
-            <div class="card-header">
-                <h2 class="justify-content-center">Анализ состава косметики</h2>
-            </div>
-
-            <div class="card-body">
-                <EditForm Model="@mod">
-                    <div class="row">
-                        <InputTextArea @bind-Value="mod.TextToSend" class="border-3" DisplayName="Clown"></InputTextArea>
-                    </div>
-                    <div class="btn" align="center">
-                        <button type="submit" class="btn btn-outline-primary">Анализировать</button>
-                    </div>                    
-               </EditForm>
-            </div>
-
-            <div class="card-body">
-                <MudForm Model="@mod">
-                    <div class="row">
-                        <MudTextField @bind-Value="mod.TextToSend" Placeholder="Вставьте список ингредиентов через запятую" Variant="Variant.Filled"></MudTextField>
-                    </div>
-                    
-                    <div class="btn" align="center">
-                        <button type="submit" class="btn btn-outline-primary">Анализировать</button>
-                    </div>      
-                </MudForm>
-            </div>
-        </div>
-    </div>
-</div>
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">    
+    <MudCard Class="mt-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
+        <MudCardHeader Class="justify-content-center">
+            <MudText Typo="Typo.h3">Анализ состава косметики</MudText>
+        </MudCardHeader>
+        <MudCardContent xs="7">
+            <MudItem xs="12" Class="justify-center">
+                <MudTextField @bind-Value="mod.TextToSend" DisableUnderLine="true" Lines="10" Placeholder="Вставьте список ингредиентов через запятую..." 
+                Variant="Variant.Filled" Style="@($"color:{Colors.Shades.Black}; background:{Colors.Indigo.Lighten5};")"></MudTextField>
+            </MudItem>
+            <MudItem xs="12" Class="d-flex justify-center">
+                <MudButton Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary" Size="Size.Large" Class="mt-8">Анализировать</MudButton>
+            </MudItem>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
 
 @code {
     private ExampleModel mod = new ExampleModel();
