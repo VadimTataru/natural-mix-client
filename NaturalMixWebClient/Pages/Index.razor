@@ -26,42 +26,99 @@
     </MudCard>
 </MudContainer>
 
+@{
+    if(componentDetails != null)
+    {
+        <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">    
+            <MudCard Class="mt-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
+                <MudCardHeader Class="justify-content-center">
+                    <p>
+                        <MudText Typo="Typo.h5">Результаты анализа</MudText>
+                    </p>
+                    <p>
+                        <MudText Typo="Typo.body1">Распознано @componentDetails.Count из @startCount</MudText>
+                    </p>                    
+                </MudCardHeader>
+                <MudCardContent xs="7">
+                    <MudExpansionPanels>
+                    @{
+                        foreach(var comp in componentDetails)
+                        {
+                            <MudExpansionPanel HideIcon="true">
+                                <TitleContent>
+                                    <div class="d-flex">
+                                        <MudText Class="mt-1">@comp.Name</MudText>
+                                        <MudBadge Content="comp.Naturalness == null ? nullableNaturalness : (int)comp.Naturalness" Color="Color.Primary" Overlap="true" Class="d-flex ml-auto">
+                                            <MudIcon Icon="@Icons.Material.Filled.SafetyCheck" Color="Color.Default" />
+                                        </MudBadge>
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>                                
+                                    <p>
+                                        <MudText Typo="Typo.body1">Происхождение: @comp.Origin</MudText>
+                                    </p> 
+                                    <p>
+                                        <MudText Typo="Typo.body1">Описание: @comp.Description</MudText>
+                                    </p>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        }
+                    }
+                    </MudExpansionPanels>
+                </MudCardContent>
+            </MudCard>
+        </MudContainer>
+    }
+}
+
 @code {
     [Required]
     private string? TextToSend { get; set; }
-    List<ComponentResponse>? componentDetails;
-
-    private string[] DivideComponents(string components)
-    {
-        return components.Split(',');
-    }
-
-    private void OpenDialog()
-    {
-        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, NoHeader = true};
-        DialogService.Show<ComponentsResponseDialogWindow>("Dialog Header", options);
-    }
+    private List<ComponentResponse>? componentDetails;
+    private int startCount = 0;
+    private const string nullableNaturalness = "-";
 
     private async Task GetComponentsDetails()
     {
         HttpClient client = new HttpClient();
 
-        string url = "https://localhost:7246/api/ComponentItem";
-        //var request = new HttpRequestMessage(HttpMethod.Post, "url");
-        var postBody = TextToSend?.Split(',');
-        if (postBody == null) return;
+        string url = "https://localhost:7246/api/ComponentItem";        
 
-        foreach (string word in postBody)
+        if (TextToSend == null || TextToSend == string.Empty)
+        {
+            return;
+        }
+
+        if(TextToSend[TextToSend.Length-1] == ',')
+        {
+            TextToSend = TextToSend.Remove(TextToSend.Length - 1);
+        }
+
+        var postBody = TextToSend.Split(',');
+        startCount = postBody.Length;
+        foreach (var word in postBody)
+        {
             word.Trim();
+        }
 
-        using var response = await client.PostAsJsonAsync(url, postBody);
 
-        if(response.IsSuccessStatusCode)
-            componentDetails = await response.Content.ReadFromJsonAsync<List<ComponentResponse>>();
+        try
+        {
+            using var response = await client.PostAsJsonAsync(url, postBody);
+            if(response.IsSuccessStatusCode)
+                componentDetails = await response.Content.ReadFromJsonAsync<List<ComponentResponse>>();
+        } catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }        
 
-        if (componentDetails.Any())
+        if (componentDetails != null)
+        {
             for(int i = 0; i < componentDetails.Count; i++)
+            {
                 Console.WriteLine(componentDetails[i].Description);
-
+            }
+        }
+        
     }
 }
