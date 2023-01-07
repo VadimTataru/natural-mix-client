@@ -19,8 +19,24 @@
                 <MudTextField @bind-Value="TextToSend" DisableUnderLine="true" Lines="10" Placeholder="Вставьте список ингредиентов через запятую..." 
                 Variant="Variant.Filled" Style="@($"color:{Colors.Shades.Black}; background:{Colors.Indigo.Lighten5};")"></MudTextField>
             </MudItem>
-            <MudItem xs="12" Class="d-flex justify-center">
-                <MudButton @onclick="@(async () => await GetComponentsDetails())" Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary" Size="Size.Large" Class="mt-8">Анализировать</MudButton>
+            <MudItem xs="12" Class="d-flex justify-center mt-8">
+                <MudButton @onclick="@(async () => await GetComponentsDetails())" Variant="Variant.Filled" DisableElevation="true" Color="Color.Primary" Size="Size.Large">Анализировать</MudButton>
+                <MudText Class="mx-8 mt-2">...или загрузите картинку с текстом!</MudText>
+                
+                
+                <MudFileUpload T="IBrowserFile" Accept="image/*" FilesChanged="UploadFiles">
+                    <ButtonTemplate>
+                        <MudButton HtmlTag="label"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   for="@context">
+                            Upload Files
+                        </MudButton>
+                    </ButtonTemplate>
+                </MudFileUpload>
+
             </MudItem>
         </MudCardContent>
     </MudCard>
@@ -29,8 +45,8 @@
 @{
     if(componentDetails != null)
     {
-        <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">    
-            <MudCard Class="mt-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
+        <MudContainer Class="ma-16" MaxWidth="MaxWidth.Medium">    
+            <MudCard Class="ma-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
                 <MudCardHeader Class="justify-content-center">
                     <p>
                         <MudText Typo="Typo.h5">Результаты анализа</MudText>
@@ -77,6 +93,13 @@
     private List<ComponentResponse>? componentDetails;
     private int startCount = 0;
     private const string nullableNaturalness = "-";
+
+    IList<IBrowserFile> files = new List<IBrowserFile>();
+    private void UploadFiles(IBrowserFile file)
+    {
+        files.Add(file);
+        //TODO upload the files to the server
+    }
 
     private async Task GetComponentsDetails()
     {
