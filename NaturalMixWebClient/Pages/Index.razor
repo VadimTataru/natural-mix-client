@@ -1,5 +1,8 @@
 ﻿@page "/"
 @using System.ComponentModel.DataAnnotations
+@using Emgu.CV
+@using Emgu.CV.OCR
+@using Emgu.CV.Structure
 @using MudBlazor
 @using System.Text
 @using System.Text.Json
@@ -64,8 +67,8 @@
                                 <TitleContent>
                                     <div class="d-flex">
                                         <MudText Class="mt-1">@comp.Name</MudText>
-                                        <MudBadge Content="comp.Naturalness == null ? nullableNaturalness : (int)comp.Naturalness" Color="Color.Primary" Overlap="true" Class="d-flex ml-auto">
-                                            <MudIcon Icon="@Icons.Material.Filled.SafetyCheck" Color="Color.Default" />
+                                        <MudBadge Content="comp.Safety == null ? nullableNaturalness : (int)comp.Safety" Color="Color.Primary" Overlap="true" Class="d-flex ml-auto">
+                                            <MudIcon Icon="@Icons.Material.Filled.SafetyCheck" Color="Color.Default" Title="Безопасность" />
                                         </MudBadge>
                                     </div>
                                 </TitleContent>
@@ -94,11 +97,19 @@
     private int startCount = 0;
     private const string nullableNaturalness = "-";
 
-    IList<IBrowserFile> files = new List<IBrowserFile>();
     private void UploadFiles(IBrowserFile file)
     {
-        files.Add(file);
-        //TODO upload the files to the server
+        try
+        {
+            Tesseract tesseract = new(@"..\tessdata\", "eng", OcrEngineMode.TesseractLstmCombined);
+            tesseract.SetImage(new Image<Bgr, byte>(file.Name));
+            tesseract.Recognize();
+            TextToSend = tesseract.GetUTF8Text();
+            tesseract.Dispose();
+        } catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
     private async Task GetComponentsDetails()
@@ -107,7 +118,7 @@
 
         string url = "https://localhost:7246/api/ComponentItem";        
 
-        if (TextToSend == null || TextToSend == string.Empty)
+        if (String.IsNullOrEmpty(TextToSend))
         {
             return;
         }

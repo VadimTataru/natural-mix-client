@@ -11,6 +11,6 @@ namespace NaturalMixWebClient.Models
         [JsonProperty("Origin")]
         public string? Origin { get; set; }
         [JsonProperty("Naturalness")]
-        public float? Naturalness { get; set; }
+        public float? Safety { get; set; }
     }
 }
