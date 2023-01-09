@@ -1,13 +1,12 @@
 ﻿@page "/"
 @using System.ComponentModel.DataAnnotations
-@using Emgu.CV
-@using Emgu.CV.OCR
-@using Emgu.CV.Structure
+@using System.Diagnostics;
 @using MudBlazor
 @using System.Text
 @using System.Text.Json
 @using System.Net.Http.Headers
 @using NaturalMixWebClient.Models
+@using Tesseract
 @inject IDialogService DialogService
 
 <PageTitle>Index</PageTitle>
@@ -27,7 +26,7 @@
                 <MudText Class="mx-8 mt-2">...или загрузите картинку с текстом!</MudText>
                 
                 
-                <MudFileUpload T="IBrowserFile" Accept="image/*" FilesChanged="UploadFiles">
+                <MudFileUpload T="IBrowserFile" Accept="image/*" FilesChanged="UploadFilesAsync">
                     <ButtonTemplate>
                         <MudButton HtmlTag="label"
                                    Variant="Variant.Filled"
@@ -35,7 +34,7 @@
                                    Size="Size.Large"
                                    StartIcon="@Icons.Material.Filled.CloudUpload"
                                    for="@context">
-                            Upload Files
+                            Загрузить картинку
                         </MudButton>
                     </ButtonTemplate>
                 </MudFileUpload>
@@ -48,18 +47,20 @@
 @{
     if(componentDetails != null)
     {
-        <MudContainer Class="ma-16" MaxWidth="MaxWidth.Medium">    
-            <MudCard Class="ma-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
+        <MudContainer Class="my-16" MaxWidth="MaxWidth.Medium">    
+            <MudCard Class="my-16" Elevation="10" Style="@($"color:{Colors.Grey.Darken4}; background:{Colors.Indigo.Lighten4};")">
                 <MudCardHeader Class="justify-content-center">
-                    <p>
-                        <MudText Typo="Typo.h5">Результаты анализа</MudText>
-                    </p>
-                    <p>
-                        <MudText Typo="Typo.body1">Распознано @componentDetails.Count из @startCount</MudText>
-                    </p>                    
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudText Class="d-flex align-center justify-center mud-width-full" Typo="Typo.h5">Результаты анализа</MudText>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudText Class="d-flex align-center justify-center mud-width-full" Typo="Typo.body1">Распознано @componentDetails.Count из @startCount</MudText>
+                        </MudItem>                        
+                    </MudGrid>                 
                 </MudCardHeader>
                 <MudCardContent xs="7">
-                    <MudExpansionPanels>
+                    <MudExpansionPanels MultiExpansion="true">
                     @{
                         foreach(var comp in componentDetails)
                         {
@@ -95,20 +96,34 @@
     private string? TextToSend { get; set; }
     private List<ComponentResponse>? componentDetails;
     private int startCount = 0;
+    private int recognizedComponentCount = 0;
     private const string nullableNaturalness = "-";
 
-    private void UploadFiles(IBrowserFile file)
+    //FixMe
+    private async Task UploadFilesAsync(IBrowserFile file)
     {
+        var ms = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(ms);
+        byte[] imageData = ms.ToArray();
+        ms.Close();
         try
         {
-            Tesseract tesseract = new(@"..\tessdata\", "eng", OcrEngineMode.TesseractLstmCombined);
-            tesseract.SetImage(new Image<Bgr, byte>(file.Name));
-            tesseract.Recognize();
-            TextToSend = tesseract.GetUTF8Text();
-            tesseract.Dispose();
-        } catch(Exception ex)
+            using (var engine = new TesseractEngine(@"E:/VSStudioProjects/NaturalMixWebClient/NaturalMixWebClient/tessdata", "eng", EngineMode.Default))
+            {
+                using (var image = Pix.LoadFromMemory(imageData))
+                {
+                    using (var page = engine.Process(image))
+                    {
+                        Console.WriteLine(page.GetText());
+                    }
+                }
+            }
+        } catch(Exception e)
         {
-            Console.WriteLine(ex.Message);
+            Trace.TraceError(e.ToString());
+            Console.WriteLine("Unexpected Error: " + e.Message);
+            Console.WriteLine("Details: ");
+            Console.WriteLine(e.ToString());
         }
     }
 
@@ -130,10 +145,11 @@
 
         var postBody = TextToSend.Split(',');
         startCount = postBody.Length;
-        foreach (var word in postBody)
+        for(int i = 0; i < postBody.Length; i++)
         {
-            word.Trim();
+            postBody[i] = postBody[i].Trim(new char[] { ' ', ',' , '\n'});
         }
+
 
 
         try
@@ -145,14 +161,5 @@
         {
             Console.WriteLine(ex.Message);
         }        
-
-        if (componentDetails != null)
-        {
-            for(int i = 0; i < componentDetails.Count; i++)
-            {
-                Console.WriteLine(componentDetails[i].Description);
-            }
-        }
-        
     }
 }
