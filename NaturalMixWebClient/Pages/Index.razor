@@ -6,7 +6,6 @@
 @using System.Text.Json
 @using System.Net.Http.Headers
 @using NaturalMixWebClient.Models
-@using Tesseract
 @inject IDialogService DialogService
 
 <PageTitle>Index</PageTitle>
@@ -55,7 +54,7 @@
                             <MudText Class="d-flex align-center justify-center mud-width-full" Typo="Typo.h5">Результаты анализа</MudText>
                         </MudItem>
                         <MudItem xs="12">
-                            <MudText Class="d-flex align-center justify-center mud-width-full" Typo="Typo.body1">Распознано @componentDetails.Count из @startCount</MudText>
+                            <MudText Class="d-flex align-center justify-center mud-width-full" Typo="Typo.body1">Распознано @componentDetails.Count элементов</MudText>
                         </MudItem>                        
                     </MudGrid>                 
                 </MudCardHeader>
@@ -94,9 +93,9 @@
 @code {
     [Required]
     private string? TextToSend { get; set; }
+
     private List<ComponentResponse>? componentDetails;
-    private int startCount = 0;
-    private int recognizedComponentCount = 0;
+    private RecognizedTextResponse? recognizedTextResponse;
     private const string nullableNaturalness = "-";
 
     //FixMe
@@ -106,18 +105,19 @@
         await file.OpenReadStream().CopyToAsync(ms);
         byte[] imageData = ms.ToArray();
         ms.Close();
+
+        HttpClient client = new HttpClient();
+        string url = "https://localhost:7246/api/ComponentItem/recognize";
         try
         {
-            using (var engine = new TesseractEngine(@"E:/VSStudioProjects/NaturalMixWebClient/NaturalMixWebClient/tessdata", "eng", EngineMode.Default))
+            using var response = await client.PostAsJsonAsync(url, imageData);
+            if(response.IsSuccessStatusCode)
             {
-                using (var image = Pix.LoadFromMemory(imageData))
-                {
-                    using (var page = engine.Process(image))
-                    {
-                        Console.WriteLine(page.GetText());
-                    }
-                }
+                recognizedTextResponse = await response.Content.ReadFromJsonAsync<RecognizedTextResponse>();
+                TextToSend = recognizedTextResponse?.Text;
+                componentDetails = recognizedTextResponse?.Data;
             }
+            
         } catch(Exception e)
         {
             Trace.TraceError(e.ToString());
@@ -144,22 +144,22 @@
         }
 
         var postBody = TextToSend.Split(',');
-        startCount = postBody.Length;
         for(int i = 0; i < postBody.Length; i++)
         {
             postBody[i] = postBody[i].Trim(new char[] { ' ', ',' , '\n'});
         }
-
-
 
         try
         {
             using var response = await client.PostAsJsonAsync(url, postBody);
             if(response.IsSuccessStatusCode)
                 componentDetails = await response.Content.ReadFromJsonAsync<List<ComponentResponse>>();
-        } catch(Exception ex)
+        } catch(Exception e)
         {
-            Console.WriteLine(ex.Message);
+            Trace.TraceError(e.ToString());
+            Console.WriteLine("Unexpected Error: " + e.Message);
+            Console.WriteLine("Details: ");
+            Console.WriteLine(e.ToString());
         }        
     }
 }
